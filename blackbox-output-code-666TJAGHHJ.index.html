@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamer Spinner Wheel</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1, #f9ca24);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            margin-right: 10px;
+            width: 200px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #ff3742;
+        }
+
+        .admin-only {
+            display: none;
+        }
+
+        .admin-mode .admin-only {
+            display: block;
+        }
+
+        #wheel {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            position: relative;
+            margin: 20px auto;
+            background: conic-gradient(
+                #ff6b6b 0deg,
+                #4ecdc4 60deg,
+                #45b7d1 120deg,
+                #f9ca24 180deg,
+                #ff6b6b 240deg,
+                #4ecdc4 300deg,
+                #45b7d1 360deg
+            );
+            transition: transform 3s ease-out;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        #wheel::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 20px solid #ff4757;
+        }
+
+        .segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            clip-path: polygon(100% 0%, 0% 0%, 50% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        #result {
+            font-size: 2em;
+            margin-top: 20px;
+            color: #f9ca24;
+        }
+
+        #namesList {
+            margin-top: 20px;
+            text-align: left;
+            display: inline-block;
+        }
+
+        #namesList ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #namesList li {
+            background: rgba(255, 255, 255, 0.1);
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .remove-btn {
+            background: #ff3742;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            padding: 2px 5px;
+        }
+
+        .remove-btn:hover {
+            background: #e63946;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gamer Spinner Wheel</h1>
+    <div class="container">
+        <p>Add your username to the wheel!</p>
+        <input type="text" id="usernameInput" placeholder="Enter username">
+        <button onclick="addUsername()">Add to Wheel</button>
+        <div class="admin-only">
+            <button onclick="spinWheel()">Spin the Wheel!</button>
+        </div>
+        <div id="wheel"></div>
+        <div id="result"></div>
+        <div id="namesList">
+            <h3>Current Names on Wheel:</h3>
+            <ul id="namesUl"></ul>
+        </div>
+        <div class="admin-only">
+            <button onclick="toggleAdmin()">Exit Admin Mode</button>
+        </div>
+        <button onclick="enterAdmin()">Admin Access</button>
+    </div>
+
+    <script>
+        let names = JSON.parse(localStorage.getItem('spinnerNames')) || [];
+        let isAdmin = false;
+        const body = document.body;
+        const wheel = document.getElementById('wheel');
+        const resultDiv = document.getElementById('result');
+        const namesUl = document.getElementById('namesUl');
+
+        function updateWheel() {
+            wheel.innerHTML = '';
+            if (names.length === 0) return;
+            const segmentAngle = 360 / names.length;
+            names.forEach((name, index) => {
+                const segment = document.createElement('div');
+                segment.className = 'segment';
+                segment.textContent = name;
+                segment.style.transform = `rotate(${index * segmentAngle}deg)`;
+                segment.style.background = `hsl(${index * (360 / names.length)}, 70%, 50%)`;
+                wheel.appendChild(segment);
+            });
+            namesUl.innerHTML = names.map((name, index) => `
+                <li>
+                    ${name}
+                    ${isAdmin ? `<button class="remove-btn" onclick="removeUser(${index})">Remove</button>` : ''}
+                </li>
+            `).join('');
+            localStorage.setItem('spinnerNames', JSON.stringify(names));
+        }
+
+        function addUsername() {
+            const input = document.getElementById('usernameInput');
+            const username = input.value.trim();
+            if (username && !names.includes(username)) {
+                names.push(username);
+                updateWheel();
+                input.value = '';
+            } else if (names.includes(username)) {
+                alert('Username already added!');
+            }
+        }
+
+        function spinWheel() {
+            if (!isAdmin) return;
+            if (names.length === 0) {
+                alert('Add some names first!');
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * names.length);
+            const segmentAngle = 360 / names.length;
+            const spinAngle = 360 * 5 + (360 - randomIndex * segmentAngle) + Math.random() * segmentAngle;
+            wheel.style.transform = `rotate(${spinAngle}deg)`;
+            setTimeout(() => {
+                resultDiv.textContent = `Winner: ${names[randomIndex]}!`;
+                wheel.style.transform = 'rotate(0deg)';
+            }, 3000);
+        }
+
+        function removeUser(index) {
+            if (!isAdmin) return;
+            names.splice(index, 1);
+            updateWheel();
+        }
+
+        function enterAdmin() {
+            const password = prompt('Enter admin password:');
+            if (password === 'Hitlerthegoat') {
+                isAdmin = true;
+                body.classList.add('admin-mode');
+                updateWheel();
+            } else {
+                alert('Incorrect password!');
+            }
+        }
+
+        function toggleAdmin() {
+            isAdmin = false;
+            body.classList.remove('admin-mode');
+            updateWheel();
+        }
+
+        updateWheel();
+    </script>
+</body>
+</html>
